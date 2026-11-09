@@ -26,8 +26,24 @@
     img.src = BLANK;
   }
 
+  // ---------- deferred work while a key is held ----------
+  // Holding an arrow sweeps past dozens of cards; loading each one's art (and details) on the
+  // way only competes with where the viewer lands. Such work waits for the key to be released.
+  var settleQueue = {};
+  function fast() { return document.body.classList.contains('fast'); }
+  function whenSettled(key, fn) {
+    if (!fast()) { fn(); return; }
+    settleQueue[key] = fn;
+  }
+  document.addEventListener('nav:settle', function () {
+    var q = settleQueue; settleQueue = {};
+    Object.keys(q).forEach(function (k) { q[k](); });
+  });
+  var rowSeq = 0;
+
   function lazyRow(row, center, span) {
     if (!row) return;
+    if (fast()) { var k = row._lazyKey || (row._lazyKey = 'row' + (++rowSeq)); settleQueue[k] = function () { lazyRow(row, row._idx != null ? row._idx : center, span); }; return; }
     var cards = row.querySelector('.track').children;
     var from = Math.max(0, center - 2), to = center + (span || 9);
     for (var i = 0; i < cards.length; i++) {
@@ -39,6 +55,32 @@
     if (!row) return;
     var imgs = row.querySelectorAll('img[data-src]');
     for (var i = 0; i < imgs.length; i++) unsetImg(imgs[i]);
+    var cards = row.querySelector('.track').children;
+    for (var j = 0; j < cards.length; j++) releaseWide(cards[j], true);
+  }
+
+  // A tile's wide art is only visible while it is expanded. Collapsing drops the full-HD
+  // version (~8 MB decoded); rows far from focus also drop the small one. Re-expanding loads
+  // them again (from the HTTP cache).
+  function releaseWide(card, all) {
+    if (!card._wide) return;
+    var hds = card._wide.querySelectorAll('.tile-wide-img.hd');
+    for (var i = 0; i < hds.length; i++) { hds[i].src = BLANK; hds[i].remove(); }
+    var it = card._item;
+    card._hd = it.bgLarge && it.bgLarge !== it.bg ? it.bgLarge : null;
+    if (all && card._wideImg && card._wideImg._src) {
+      card._wideImg._src = null;
+      card._wideImg.classList.remove('in');
+      card._wideImg.src = BLANK;
+      card.classList.remove('wide-ready');
+    }
+  }
+
+  function loadWide(card) {
+    var img = card._wideImg, it = card._item;
+    if (!img || img._src) return;
+    img._src = it.bg || it.poster;
+    img.src = img._src;
   }
 
   // ---------- cards ----------
@@ -91,9 +133,9 @@
     var cached = (U.store.get('lite', {}) || {})[id];
     if (cached) return cached;
     return {
-      id: id, type: it.type, name: it.name, poster: it.poster,
-      bg: isImdb ? 'https://images.metahub.space/background/small/' + id + '/img' : it.poster,
-      bgLarge: isImdb ? 'https://images.metahub.space/background/medium/' + id + '/img' : it.poster,
+      id: id, type: it.type, name: it.name, poster: g.LiteSized(it.poster, 342),
+      bg: isImdb ? 'https://images.metahub.space/background/small/' + id + '/img' : g.LiteSized(it.poster, 780),
+      bgLarge: isImdb ? 'https://images.metahub.space/background/medium/' + id + '/img' : g.LiteSized(it.poster, 1280),
       logo: isImdb ? 'https://images.metahub.space/logo/medium/' + id + '/img' : '',
       genres: [], year: '', rating: 0, desc: '', cast: [], director: [], pop: 0
     };
@@ -204,7 +246,7 @@
 
   // The wide layer is only built the first time a tile is focused.
   function ensureWide(card) {
-    if (card._wide) return card._wide;
+    if (card._wide) { whenSettled('wide', function () { if (card.classList.contains('expanded')) loadWide(card); }); return card._wide; }
     var it = card._item;
     var kicker = card._opts.kicker || (it.type === 'series' ? 'SERIES' : it.type === 'movie' ? 'FILM' : '');
     var img = h('img', { class: 'tile-wide-img', alt: '' });
@@ -224,10 +266,10 @@
     ]);
     img.decoding = 'async';
     img.onload = function () {
-      var show = function () { img.classList.add('in'); card.classList.add('wide-ready'); };
+      if (!img._src) return;
+      var show = function () { if (img._src) { img.classList.add('in'); card.classList.add('wide-ready'); } };
       if (img.decode) img.decode().then(show, show); else show();
     };
-    img.src = it.bg || it.poster;
     // Sharper art once the tile has been in focus for a moment.
     card._hd = it.bgLarge && it.bgLarge !== it.bg ? it.bgLarge : null;
     if (it.logo) {
@@ -238,11 +280,12 @@
     card.querySelector('.tile-art').appendChild(wide);
     card._wide = wide;
     card._wideImg = img;
+    whenSettled('wide', function () { if (card.classList.contains('expanded')) loadWide(card); });
     return wide;
   }
 
   function warmWide(card) {
-    if (!card || !card._item || card._warm) return;
+    if (!card || !card._item || card._warm || fast()) return;
     card._warm = true;
     var im = new Image();
     im.decoding = 'async';
@@ -310,7 +353,7 @@
       var prev = r._expanded;
       if (prev === card) return;
       var kids = track.children;
-      var animate = !!(card && prev) && !document.body.classList.contains('fast');
+      var animate = !!(card && prev) && !document.body.classList.contains('fast') && !document.body.classList.contains('lite');
       var lo = 0, hi = -1, before = null, i;
       if (animate) {
         var a = Array.prototype.indexOf.call(kids, prev), b = Array.prototype.indexOf.call(kids, card);
@@ -318,13 +361,13 @@
         before = [];
         for (i = lo; i <= hi; i++) before.push(kids[i].offsetLeft);
       }
-      if (prev) prev.classList.remove('expanded');
+      if (prev) { prev.classList.remove('expanded'); releaseWide(prev, false); }
       clearTimeout(hdTimer);
       r._expanded = card;
       wrap.classList.toggle('active', !!card);
       if (!card) return;
-      ensureWide(card);
       card.classList.add('expanded');
+      ensureWide(card);
       var ci = Array.prototype.indexOf.call(kids, card);
       for (i = 0; i < kids.length; i++) kids[i].classList.toggle('gone', i < ci);
       if (before) {
@@ -337,7 +380,8 @@
       }
       var it = card._item;
       fillInfo(card);
-      if (!it.desc && /^tt/.test(it.id) && !it._enriching) {
+      whenSettled('enrich', function () {
+        if (r._expanded !== card || it.desc || !/^tt/.test(it.id) || it._enriching) return;
         it._enriching = true;
         Addons.meta(it.type, it.id).then(function (m) {
           var l = Addons.lite(m);
@@ -345,8 +389,9 @@
           Object.keys(l).forEach(function (k) { if (!it[k] || (Array.isArray(it[k]) && !it[k].length)) it[k] = l[k]; });
           if (r._expanded === card) fillInfo(card);
         }).catch(function () {});
-      }
+      });
       warmWide(kids[ci + 1]); warmWide(kids[ci - 1]);
+      if (document.body.classList.contains('lite')) return; // lite mode: no full-HD upgrade
       hdTimer = setTimeout(function () {
         if (r._expanded !== card || !card._hd) return;
         var hd = new Image();
@@ -645,7 +690,7 @@
 
   g.UI = {
     BLANK: BLANK, row: row, landscapeCard: landscapeCard, posterCard: posterCard, continueCard: continueCard,
-    lazyRow: lazyRow, tileRow: tileRow, billboard: billboard, setRanks: setRanks, rate: rate, rateInline: rateInline, RATE_ICONS: RATE_ICONS, unloadRow: unloadRow, setImg: setImg, epLabel: epLabel, libToLite: libToLite,
+    lazyRow: lazyRow, whenSettled: whenSettled, tileRow: tileRow, billboard: billboard, setRanks: setRanks, rate: rate, rateInline: rateInline, RATE_ICONS: RATE_ICONS, unloadRow: unloadRow, setImg: setImg, epLabel: epLabel, libToLite: libToLite,
     Hero: Hero, toast: toast, menu: menu, confirm: confirm
   };
 })(window);

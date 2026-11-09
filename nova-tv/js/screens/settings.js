@@ -76,6 +76,16 @@
       var ap = U.store.get('autoplay', true);
       item('Autoplay next episode', ap ? 'On' : 'Off', function () { U.store.set('autoplay', !ap); render(); });
 
+      var sk = U.store.get('skipIntro', 'button');
+      var SKIP = { button: 'Show a button', auto: 'Automatically', off: 'Off' };
+      item('Skip intros & recaps', SKIP[sk], function () {
+        UI.menu({ title: 'Skip intros & recaps', subtitle: 'Timestamps from TheIntroDB, a community database. Not every episode is covered.', items: [
+          { label: 'Show a button', sub: 'Press OK on “Skip Intro” to jump ahead', selected: sk === 'button', onSelect: function () { U.store.set('skipIntro', 'button'); render(); } },
+          { label: 'Automatically', sub: 'Skips on its own · Back right after rewinds', selected: sk === 'auto', onSelect: function () { U.store.set('skipIntro', 'auto'); render(); } },
+          { label: 'Off', selected: sk === 'off', onSelect: function () { U.store.set('skipIntro', 'off'); render(); } }
+        ] });
+      }, 'Also starts the next-episode countdown when the credits begin');
+
       var al = U.store.get('audioLang', 'eng');
       var AUDIO = [{ code: 'eng', label: 'English' }, { code: 'nld', label: 'Nederlands' }, { code: 'orig', label: 'Whatever the file starts with' }];
       item('Audio language', (AUDIO.filter(function (a) { return a.code === al; })[0] || { label: al.toUpperCase() }).label, function () {
@@ -110,6 +120,16 @@
           var res = (a.manifest.resources || []).map(function (r) { return r.name || r; }).join(', ');
           return { label: a.manifest.name, sub: res };
         }) });
+      });
+
+      var pm = Perf.mode();
+      var PM = { auto: Perf.autoSwitched ? 'Auto · lighter' : 'Auto', full: 'Full effects', lite: 'Lighter' };
+      item('Performance', PM[pm], function () {
+        UI.menu({ title: 'Performance', subtitle: 'Lighter mode drops trailer previews, the tile animations and full-HD tile art, so slower TVs stay responsive.', items: [
+          { label: 'Auto', sub: Perf.autoSwitched ? 'Switched to lighter: this TV was lagging' : 'Switches to lighter if this TV lags', selected: pm === 'auto', onSelect: function () { Perf.setMode('auto'); render(); } },
+          { label: 'Full effects', selected: pm === 'full', onSelect: function () { Perf.setMode('full'); render(); } },
+          { label: 'Lighter', selected: pm === 'lite', onSelect: function () { Perf.setMode('lite'); render(); } }
+        ] });
       });
 
       list.appendChild(h('div', { class: 'set-head' }, 'About'));

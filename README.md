@@ -9,6 +9,9 @@ progress, with a big-screen interface made for the remote.
 - Source picking tuned for the TV's decoders (codecs, HDR, audio language, debrid, release-group
   continuity across episodes), with automatic fallback if a source fails.
 - Resume, next-episode countdown with preloading, subtitles from the file or OpenSubtitles.
+- Skip Intro / Skip Recap, and the next-episode card at the real start of the credits, using
+  timestamps from [TheIntroDB](https://theintrodb.org), a free community database.
+- A lighter mode that switches itself on when a TV keeps lagging (Settings → Performance).
 - Progress syncs back to your Stremio account, so the other Stremio apps stay in step.
 - Torrent sources through the Stremio desktop app on your network, found automatically.
 
@@ -92,6 +95,8 @@ and every main-thread task over 50 ms are printed on your computer. Never ship a
 | `nova-tv/js/library.js` | Progress sync with Stremio (incremental via `datastoreMeta`) |
 | `nova-tv/js/discover.js` | Finds the Stremio streaming server on the local network |
 | `nova-tv/js/trailer.js` | Trailer previews and the full-screen trailer player |
+| `nova-tv/js/segments.js` | Intro / recap / credits timestamps (TheIntroDB) |
+| `nova-tv/js/perf.js` | Lag detection and the lighter mode |
 | `nova-tv/js/worker.js`, `lite.js` | Catalog fetch, parse and slimming off the UI thread |
 | `tools/` | Deploy script, dev server, TV log receiver |
 | `trailer-relay/` | YouTube relay page (submodule, GitHub Pages) |

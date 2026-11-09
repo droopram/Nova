@@ -11,6 +11,13 @@
     return '';
   }
 
+  // TMDB art often comes as /t/p/original (up to 4K: ~33 MB once decoded). Ask TMDB for the
+  // width we actually draw. Other hosts are left alone.
+  function sized(url, w) {
+    return typeof url === 'string' ? url.replace(/(image\.tmdb\.org\/t\/p\/)(original|w\d+)\//, '$1w' + w + '/') : url;
+  }
+  g.LiteSized = sized;
+
   g.Lite = function (m, addonId) {
     if (!m || !m.id) return null;
     var id = m.id || m.imdb_id;
@@ -22,10 +29,11 @@
       id: id,
       type: m.type,
       name: m.name || '',
-      poster: m.poster || (isImdb ? 'https://images.metahub.space/poster/small/' + id + '/img' : ''),
-      bg: isImdb ? 'https://images.metahub.space/background/small/' + id + '/img' : (m.background || m.poster || ''),
-      bgLarge: m.background || (isImdb ? 'https://images.metahub.space/background/medium/' + id + '/img' : ''),
-      logo: m.logo || (isImdb ? 'https://images.metahub.space/logo/medium/' + id + '/img' : ''),
+      // Posters draw at 309 px, tiles at 894 px, the billboard/detail page at ~1800 px.
+      poster: sized(m.poster, 342) || (isImdb ? 'https://images.metahub.space/poster/small/' + id + '/img' : ''),
+      bg: isImdb ? 'https://images.metahub.space/background/small/' + id + '/img' : sized(m.background || m.poster || '', 780),
+      bgLarge: sized(m.background, 1280) || (isImdb ? 'https://images.metahub.space/background/medium/' + id + '/img' : ''),
+      logo: sized(m.logo, 500) || (isImdb ? 'https://images.metahub.space/logo/medium/' + id + '/img' : ''),
       genres: m.genres || m.genre || [],
       year: m.releaseInfo || m.year || '',
       rating: parseFloat(m.imdbRating) || 0,

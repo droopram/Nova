@@ -234,7 +234,7 @@
       if (now - lastMove < 85) return;
       document.body.classList.add('fast');
       clearTimeout(fastTimer);
-      fastTimer = setTimeout(function () { document.body.classList.remove('fast'); }, 260);
+      fastTimer = setTimeout(function () { document.body.classList.remove('fast'); document.dispatchEvent(new Event('nav:settle')); }, 260);
     }
     if (isMove) lastMove = now;
 

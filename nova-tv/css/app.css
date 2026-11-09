@@ -136,6 +136,12 @@ body.fast .track, body.fast .rows, body.fast .card, body.fast [data-vscroll] { t
 .search-right { position: absolute; left: 720px; top: 160px; right: 30px; bottom: 0; }
 .search-right .row-title { margin-left: 10px; }
 .search-right .grid-viewport { left: -10px; right: 0; top: 60px; bottom: 0; padding: 20px; }
+.search-right.has-chips .grid-viewport { top: 140px; }
+.row.q-chips { position: absolute; left: 10px; right: 0; top: 66px; height: 64px; margin: 0; overflow: visible; }
+.q-chips .track { gap: 14px; }
+.q-chip { flex: none; height: 56px; line-height: 56px; padding: 0 26px; border-radius: 28px; background: rgba(255, 255, 255, 0.1); font-size: 24px; font-weight: 600; white-space: nowrap; max-width: 520px; overflow: hidden; text-overflow: ellipsis; transition: transform 0.12s var(--ease), background 0.15s, color 0.15s; }
+.q-chip.recent::before { content: '\21BA'; margin-right: 12px; opacity: 0.55; }
+.q-chip.focused { background: #fff; color: #000; transform: scale(1.06); }
 
 /* ---------------- detail ---------------- */
 .screen.detail { z-index: 15; background: var(--bg); animation: fadein 0.25s ease; transition: opacity 0.2s; }
@@ -279,6 +285,9 @@ body.fast .track, body.fast .rows, body.fast .card, body.fast [data-vscroll] { t
 .p-n-fill i { display: block; height: 100%; background: rgba(255, 255, 255, 0.28); transform-origin: left center; transform: scaleX(0); }
 .p-n-label { position: relative; }
 .p-n-btn.focused { background: #fff; color: #000; }
+.p-skip { position: absolute; right: 100px; bottom: 150px; z-index: 4; padding: 18px 34px; border-radius: 10px; border: 2px solid rgba(255, 255, 255, 0.7); background: rgba(18, 18, 24, 0.72); font-size: 28px; font-weight: 700; animation: slidein 0.3s var(--ease); transition: transform 0.12s var(--ease), background 0.15s, color 0.15s; }
+.p-skip.focused { background: #fff; color: #000; border-color: #fff; }
+#player.osd .p-skip { bottom: 300px; }
 .p-n-btn.focused .p-n-fill i { background: rgba(0, 0, 0, 0.14); }
 
 /* ---------------- subtitles menu (compact, bottom-right like Stremio) ---------------- */
@@ -497,3 +506,10 @@ body.fast .tile.expanded .tile-art { animation-duration: 0.09s; }
 .tf-clock { font-variant-numeric: tabular-nums; color: rgba(255, 255, 255, 0.85); }
 .tf-status { color: #fff; font-weight: 700; }
 .tf-keys { margin-left: auto; color: rgba(255, 255, 255, 0.5); }
+
+/* ---------------- lighter mode (slow TVs, js/perf.js) ---------------- */
+body.lite { --dur: 0.16s; }
+body.lite .tile.expanded .tile-art { animation: none; }
+body.lite .tile.expanded .tile-brand, body.lite .tile.expanded .tile-badges { animation: none; }
+body.lite .card-img img, body.lite .tile-poster, body.lite .tile-wide, body.lite .tile-wide-img, body.lite .bb-img { transition: none; }
+body.lite .card { transition: none; }

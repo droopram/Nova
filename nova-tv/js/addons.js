@@ -167,6 +167,16 @@
       })).then(function (lists) { return [].concat.apply([], lists); });
     },
 
+    /** Ranks a local list for `query` (same rules as search), dropping non-matches. */
+    rankLocal: function (list, query) {
+      var q = norm(query);
+      if (!q) return [];
+      return list.map(function (m) { return { m: m, r: relevance(norm(m.name), q) }; })
+        .filter(function (x) { return x.r > 0; })
+        .sort(function (a, b) { return b.r - a.r || (b.m.pop || 0) - (a.m.pop || 0); })
+        .map(function (x) { return x.m; });
+    },
+
     /**
      * Searches every addon catalog that supports it. Results stream in: onPartial(list) gets the
      * merged, ranked list each time another addon answers, so one slow or broken addon never

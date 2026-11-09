@@ -14,7 +14,7 @@
   // (trailer-relay/index.html hosted on a real web origin, set as NOVA_CONFIG.trailerRelay).
   var RELAY = (g.NOVA_CONFIG || {}).trailerRelay || '';
   var CAN_EMBED = /^https?:$/.test(location.protocol) || !!RELAY;
-  function enabled() { return CAN_EMBED && U.store.get('previews', true); }
+  function enabled() { return CAN_EMBED && U.store.get('previews', true) && !document.body.classList.contains('lite'); }
   function withSound() { return U.store.get('previewSound', true); }
 
   // Trailers whose uploader blocks embedding (YouTube errors 100/101/150) are remembered and skipped.

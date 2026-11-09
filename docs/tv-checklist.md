@@ -20,7 +20,15 @@ Things that can only be confirmed on a real Samsung TV, not in the browser previ
 9. Streaming server: with Stremio open on a computer on the same network, the log shows `discover: own ip …` and
    the server is found within a few seconds of start.
 10. Search: results appear while typing, even with a slow or broken search addon installed.
-11. Finish with a plain `tools/deploy.sh <tv-ip>` (no log mirror) for a clean build.
+11. Skip Intro: play an episode of a well-known show (e.g. Breaking Bad S1E2, intro at 5:14). The log prints
+    `segments: intro …`; **Skip Intro** appears with focus and OK jumps past it. Near the end the next-episode card
+    appears when the credits start.
+12. Memory: browse 30+ tiles across several rows, then check the app still feels the same (HD tile art is released
+    when a tile collapses).
+13. Hold ◀/▶ along a row: no art loads while held; the landing tile fills in right after release.
+14. Lighter mode: Settings → Performance → Lighter removes previews and tile animations. In Auto, the log prints
+    `perf: … switching to lighter mode` only if the TV really lags.
+15. Finish with a plain `tools/deploy.sh <tv-ip>` (no log mirror) for a clean build.
 
 ## Troubleshooting
 

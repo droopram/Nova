@@ -337,7 +337,9 @@
     ui.nBtn._onSelect = function () { playNext(); };
     ui.next = h('div', { class: 'p-next hidden' }, [ui.nThumb, h('div', { class: 'p-n-info' }, [h('div', { class: 'p-n-kicker' }, 'Next Episode'), ui.nTitle, ui.nBtn])]);
 
-    U.append(root, [ui.subs, ui.pill, ui.center, ui.buffer, ui.osd, ui.next, ui.loading]);
+    ui.skip = h('div', { class: 'p-skip hidden', 'data-f': true });
+    ui.skip._onSelect = function () { if (st && st.skip) doSkip(st.skip.seg); };
+    U.append(root, [ui.subs, ui.pill, ui.center, ui.buffer, ui.osd, ui.next, ui.skip, ui.loading]);
   }
 
   function pbtn(label, fn) {
@@ -404,6 +406,7 @@
       resumeAt: opts.resumeAt || 0, ranked: null, ci: -1, tries: 0, started: false, playing: false,
       t: opts.resumeAt || 0, tAt: performance.now(), openedAt: performance.now(), dur: 0, scrubT: null, lastSave: 0,
       nextVideo: null, nextRanked: null, nextPreloading: false, nextShown: false, nextDismissed: false,
+      segs: null, skip: null, skipped: {},
       subs: { cues: null, i: 0, mode: null, delay: 0 }, ss: loadStreamState(opts.meta.id, opts.videoId), embedded: false, counted: false, recovered: false, audioChecked: false
     };
     st.nextVideo = nextOf(st.meta, st.videoId);
@@ -415,12 +418,13 @@
     ui.title.textContent = tl.title;
     ui.sub.textContent = tl.sub;
     ui.lTitle.textContent = tl.sub;
-    ui.lBg.src = (st.video && st.video.thumbnail) || st.meta.background || '';
-    ui.lLogo.src = st.meta.logo || '';
+    ui.lBg.src = (st.video && st.video.thumbnail) || LiteSized(st.meta.background, 1280) || '';
+    ui.lLogo.src = LiteSized(st.meta.logo, 500) || '';
     ui.lLogo.onerror = function () { ui.lLogo.removeAttribute('src'); };
     ui.btnEpisodes.classList.toggle('disabled', st.meta.type !== 'series');
     ui.btnNext.classList.toggle('disabled', !st.nextVideo);
     ui.next.classList.add('hidden');
+    hideSkip();
     showSubText('');
     hideOSD();
     setLoading(true, 'Finding the best source…');
@@ -541,6 +545,7 @@
       if (st.cur.p.bingeGroup) U.store.set('binge.' + st.meta.id, st.cur.p.bingeGroup);
       U.store.set('lastAddon', st.cur.s._addon);
       setTimeout(setupTracks, 1200);
+      loadSegments();
       if (st.subs.delay) setTimeout(function () { if (st) flashPill('Subtitle delay', PROPS.delay.fmt(st.subs.delay) + ' · saved', 2500); }, 1500);
     }
     st.playing = !engine.paused();
@@ -552,10 +557,62 @@
     var now = Date.now();
     if (now - st.lastSave > 10000) { st.lastSave = now; saveProgress(false); }
 
+    updateSkip();
     if (!st.dur || !st.nextVideo) return;
     var ratio = st.t / st.dur;
     if (ratio > 0.5 && !st.nextPreloading) preloadNext();
-    if (!st.nextShown && !st.nextDismissed && st.dur - st.t <= NEXT_PROMPT_SEC && st.dur > 300) showNextCard();
+    // The next-episode card comes up when the credits start (TheIntroDB), else 35 s before the end.
+    var credits = Segments.creditsStart(st.segs, st.dur);
+    var due = credits != null ? st.t >= credits : st.dur - st.t <= NEXT_PROMPT_SEC;
+    if (!st.nextShown && !st.nextDismissed && due && st.dur > 300) showNextCard();
+  }
+
+  // ---------------- skip intro / recap ----------------
+  var SKIP_LABEL = { intro: 'Skip Intro', recap: 'Skip Recap' };
+  function skipMode() { return U.store.get('skipIntro', 'button'); } // 'button' | 'auto' | 'off'
+
+  function loadSegments() {
+    var my = st;
+    if (skipMode() === 'off' && !my.nextVideo) return;
+    Segments.get(my.meta, my.video, engine.duration()).then(function (segs) {
+      if (my !== st || !segs) return;
+      my.segs = segs;
+      console.log('segments:', ['intro', 'recap', 'credits'].map(function (k) { return k + ' ' + segs[k].map(function (x) { return Math.round(x.start) + '-' + (x.end === Infinity ? 'end' : Math.round(x.end)); }).join(','); }).join(' · '));
+    });
+  }
+
+  function updateSkip() {
+    var seg = skipMode() === 'off' || st.scrubT != null ? null : Segments.skippable(st.segs, st.t);
+    var id = seg ? seg.kind + seg.start : null;
+    if (seg && skipMode() === 'auto' && !st.skipped[id]) {
+      st.skipped[id] = true;
+      doSkip(seg);
+      flashPill(SKIP_LABEL[seg.kind].replace('Skip ', '') + ' skipped', 'Back to rewatch', 2500);
+      return;
+    }
+    if (!seg || st.skipped[id]) { if (st.skip) hideSkip(); return; }
+    if (st.skip && st.skip.id === id) return;
+    st.skip = { id: id, seg: seg };
+    ui.skip.textContent = SKIP_LABEL[seg.kind];
+    ui.skip.classList.remove('hidden');
+    // OK skips, as on Netflix: the button takes focus unless the viewer is in the controls.
+    if (!osdVisible() && ui.next.classList.contains('hidden')) Nav.focus(ui.skip, { instant: true });
+  }
+
+  function hideSkip() {
+    if (st) st.skip = null;
+    ui.skip.classList.add('hidden');
+    if (Nav.focused === ui.skip) Nav.focus(ui.bar, { instant: true });
+  }
+
+  function doSkip(seg) {
+    var to = Math.min(seg.end, (st.dur || 1e9) - 2);
+    st.skipped[seg.kind + seg.start] = true;
+    st.lastSkip = { from: st.t, at: performance.now() };
+    console.log('skip', seg.kind, Math.round(st.t) + 's ->', Math.round(to) + 's');
+    st.t = to; st.subs.i = 0;
+    engine.seek(to);
+    hideSkip();
   }
 
   function onEnd() {
@@ -584,7 +641,7 @@
   function showNextCard() {
     st.nextShown = true;
     var nv = st.nextVideo;
-    ui.nThumb.src = nv.thumbnail || st.meta.background || '';
+    ui.nThumb.src = nv.thumbnail || LiteSized(st.meta.background, 780) || '';
     ui.nTitle.textContent = UI.epLabel(nv.id) + ' · ' + (nv.name || nv.title || '');
     hideOSD();
     ui.next.classList.remove('hidden');
@@ -705,6 +762,16 @@
       return true;
     }
 
+    if (st.skip && !osdVisible()) {
+      if (action === 'enter') { doSkip(st.skip.seg); return true; }
+      if (action === 'back') { st.skipped[st.skip.id] = true; hideSkip(); return true; }
+    }
+    // Back within a few seconds of an automatic skip returns to where it jumped from.
+    if (action === 'back' && !osdVisible() && st.lastSkip && performance.now() - st.lastSkip.at < 6000) {
+      var back = st.lastSkip.from; st.lastSkip = null;
+      st.t = back; st.subs.i = 0; engine.seek(back); flashPill('Rewound', '', 1200);
+      return true;
+    }
     if (!osdVisible()) {
       if (action === 'left' || action === 'right') { showOSD(true); scrub(action === 'right' ? 1 : -1); return true; }
       if (action === 'enter') { togglePause(); return true; }

@@ -57,7 +57,7 @@
     var bar = pr ? h('div', { class: 'card-progress' }, h('i', { style: { width: (pr.done ? 100 : Math.max(3, pr.t / pr.d * 100)) + '%' } })) : null;
     var card = h('div', { class: 'card ep' + (aired(v) ? '' : ' unaired'), 'data-f': true }, [
       h('div', { class: 'card-img' }, [
-        h('img', { 'data-src': (v.thumbnail || meta.background || '').replace(/\/w780\.jpg$/, '/w500.jpg'), alt: '' }),
+        h('img', { 'data-src': LiteSized((v.thumbnail || meta.background || '').replace(/\/w780\.jpg$/, '/w500.jpg'), 500), alt: '' }),
         h('div', { class: 'ep-play' }, '▶'),
         bar
       ]),
@@ -231,7 +231,7 @@
     var lite = Addons.lite(meta);
     var body = st.body;
     body.innerHTML = '';
-    if (meta.background) st.bg.src = meta.background;
+    if (meta.background) st.bg.src = LiteSized(meta.background, 1280);
 
     var logo = h('img', { class: 'd-logo', src: lite.logo || '', alt: '' });
     var title = h('div', { class: 'd-title hide' }, meta.name);
