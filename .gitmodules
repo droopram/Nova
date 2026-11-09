@@ -1,0 +1,3 @@
+[submodule "trailer-relay"]
+	path = trailer-relay
+	url = https://github.com/droopram/trailer-relay.git

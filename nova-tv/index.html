@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=1920, initial-scale=1">
+  <title>Nova</title>
+  <!-- Open TLS connections while the app boots: saves a round trip or two per host. -->
+  <link rel="preconnect" href="https://api.strem.io" crossorigin>
+  <link rel="preconnect" href="https://v3-cinemeta.strem.io" crossorigin>
+  <link rel="preconnect" href="https://cinemeta-catalogs.strem.io" crossorigin>
+  <link rel="preconnect" href="https://images.metahub.space">
+  <link rel="preconnect" href="https://episodes.metahub.space">
+  <link rel="preconnect" href="https://torrentio.strem.fun">
+  <link rel="stylesheet" href="css/app.css">
+  <script async src="$WEBAPIS/webapis/webapis.js"></script>
+</head>
+<body>
+  <div id="stage">
+    <!-- Video plane sits underneath the web layer on Tizen; this object hosts it. -->
+    <object id="avplayer" type="application/avplayer"></object>
+    <video id="html5video" playsinline></video>
+
+    <div id="ui">
+      <div id="hero" class="hero">
+        <div class="hero-bg"><img class="hero-img a"><img class="hero-img b"></div>
+        <div class="hero-shade"></div>
+        <div class="hero-info">
+          <div class="hero-logo-wrap"><img class="hero-logo"><div class="hero-title"></div></div>
+          <div class="hero-meta"></div>
+          <div class="hero-desc"></div>
+        </div>
+      </div>
+
+      <nav id="topnav"></nav>
+      <main id="screens"></main>
+    </div>
+
+    <div id="player" class="hidden"></div>
+    <div id="modal" class="hidden"></div>
+    <div id="toast"></div>
+    <div id="boot"><div class="boot-logo">nova</div><div class="spinner"></div></div>
+  </div>
+
+  <script src="js/config.js"></script>
+  <script src="js/lite.js"></script>
+  <script src="js/util.js"></script>
+  <script src="js/nav.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/addons.js"></script>
+  <script src="js/library.js"></script>
+  <script src="js/ratings.js"></script>
+  <script src="js/fresh.js"></script>
+  <script src="js/recs.js"></script>
+  <script src="js/streams.js"></script>
+  <script src="js/discover.js"></script>
+  <script src="js/trailer.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/screens/login.js"></script>
+  <script src="js/screens/home.js"></script>
+  <script src="js/screens/detail.js"></script>
+  <script src="js/screens/search.js"></script>
+  <script src="js/screens/settings.js"></script>
+  <script src="js/player.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

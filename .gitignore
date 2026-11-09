@@ -1,0 +1,38 @@
+# ---- Build output --------------------------------------------------------
+# tools/deploy.sh writes the bundle and the signed package here.
+build/
+*.wgt
+
+# ---- Signing material: never commit -------------------------------------
+# Tizen author/distributor certificates and keystores live in ~/tizen-studio-data.
+*.p12
+*.pfx
+*.pem
+*.key
+*.keystore
+*.jks
+profiles.xml
+.sign/
+
+# ---- Secrets / local config ---------------------------------------------
+.env
+.env.*
+!.env.example
+
+# ---- Tizen Studio project files -----------------------------------------
+.project
+.tproject
+.settings/
+.buildResult/
+
+# ---- Editors, OS, tools --------------------------------------------------
+.claude/settings.local.json
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+node_modules/
+__pycache__/
+*.pyc
+*.log

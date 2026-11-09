@@ -1,0 +1,7 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    { "name": "nova", "runtimeExecutable": "python3", "runtimeArgs": ["tools/devserver.py", "8766", "nova-tv"], "port": 8766 },
+    { "name": "nova-build", "runtimeExecutable": "python3", "runtimeArgs": ["tools/devserver.py", "8767", "build/app"], "port": 8767 }
+  ]
+}
